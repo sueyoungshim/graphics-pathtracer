@@ -1,5 +1,5 @@
-# Project 3-1: Pathtracer
+# Homework 3: Pathtracer
 
 Spring 2024
 
-[Project Spec](https://cs184.eecs.berkeley.edu/sp23/docs/proj3-1)
+[Project Spec](https://cs184.eecs.berkeley.edu/sp24/docs/hw3-1)
