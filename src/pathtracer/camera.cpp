@@ -195,9 +195,22 @@ Ray Camera::generate_ray(double x, double y) const {
   // Note: hFov and vFov are in degrees.
   //
 
+  double hFov_rad = radians(hFov);
+  double vFov_rad = radians(vFov);
 
-  return Ray(pos, Vector3D(0, 0, -1));
+  Vector3D bottomLeft(-tan(hFov_rad / 2), -tan(vFov_rad / 2), -1);
+  Vector3D topRight(tan(hFov_rad / 2), tan(vFov_rad / 2), -1);
 
-}
+  double sensor_x = bottomLeft.x + x * (topRight.x - bottomLeft.x);
+  double sensor_y = bottomLeft.y + y * (topRight.y - bottomLeft.y);
 
+  Vector3D dir = Vector3D(sensor_x, sensor_y, -1).unit();
+  Vector3D worldDir = c2w * dir;
+  
+  Ray ray = Ray(pos, worldDir);
+  ray.min_t = nClip;
+  ray.max_t = fClip;
+
+  return ray;
+  }
 } // namespace CGL

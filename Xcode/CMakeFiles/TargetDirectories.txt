@@ -1,0 +1,17 @@
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CMakeFiles/pt31.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CMakeFiles/pathtracer.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CMakeFiles/install.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CMakeFiles/ALL_BUILD.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CMakeFiles/ZERO_CHECK.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/CMakeFiles/CGL.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/CMakeFiles/install.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/CMakeFiles/ALL_BUILD.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/CMakeFiles/ZERO_CHECK.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glew/CMakeFiles/glew.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glew/CMakeFiles/install.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glfw/CMakeFiles/uninstall.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glfw/CMakeFiles/install.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glfw/CMakeFiles/ALL_BUILD.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glfw/CMakeFiles/ZERO_CHECK.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glfw/src/CMakeFiles/glfw.dir
+/Users/sueshim/Desktop/cs184/hw3-pathtracer-sp24-1025/Xcode/CGL/deps/glfw/src/CMakeFiles/install.dir
