@@ -21,6 +21,6 @@
 768
 
 
-
+../dae/meshedit/cow.dae
 600
 800

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
-   LastUpgradeVersion = "1520"
+   LastUpgradeVersion = "1530"
    version = "1.7">
    <BuildAction
       parallelizeBuildables = "YES"
@@ -53,7 +53,23 @@
       <CommandLineArguments>
          <CommandLineArgument
             argument = "-r 800 600 -f CBspheres.png ../dae/sky/CBspheres_lambertian.dae"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-t 8 -s 16 -l 8 -m 6 -H -f CBbunny_16_8.png -r 480 360 ../dae/sky/CBbunny.dae"
             isEnabled = "YES">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-t 8 -r 800 600 -f CBlucy.png ../dae/sky/CBlucy.dae"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-t 8 -r 800 600 -f maxplanck.png ../dae/meshedit/maxplanck.dae"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
+            argument = "-t 8 -r 800 600 -f cow.png ../dae/meshedit/cow.dae"
+            isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
             argument = "-r 800 600 -f CBempty.png ../dae/sky/CBempty.dae "

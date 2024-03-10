@@ -48,6 +48,22 @@ void BVHAccel::drawOutline(BVHNode *node, const Color &c, float alpha) const {
   }
 }
 
+int indexOfLargestExtent(const Vector3D& extent) {
+  if (extent.x > extent.y) {
+    if (extent.x > extent.z) {
+      return 0;
+    } else {
+      return 2;
+    }
+  } else {
+    if (extent.y > extent.z) {
+      return 1;
+    } else {
+      return 2;
+    }
+  }
+}
+
 BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
                                  std::vector<Primitive *>::iterator end,
                                  size_t max_leaf_size) {
@@ -57,22 +73,44 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
   // size configuration. The starter code build a BVH aggregate with a
   // single leaf node (which is also the root) that encloses all the
   // primitives.
-
-
+  
   BBox bbox;
-
+  Vector3D centroid_sum;
   for (auto p = start; p != end; p++) {
     BBox bb = (*p)->get_bbox();
+    centroid_sum += bb.centroid();
     bbox.expand(bb);
   }
+  
+  size_t primitives_count = std::distance(start, end);
+
+  if (primitives_count <= max_leaf_size) {
+    BVHNode *node = new BVHNode(bbox);
+    node->start = start;
+    node->end = end;
+    return node;
+  }
+  
+  Vector3D centroid = centroid_sum / static_cast<double>(primitives_count);
+
+  BBox centroid_bbox;
+  for (auto p = start; p != end; ++p) {
+    centroid_bbox.expand((*p)->get_bbox().centroid());
+  }
+  
+  int split_axis = indexOfLargestExtent(centroid_bbox.extent);
+
+  auto partition_point = std::partition(start, end, [&](const Primitive* p) {
+    return p->get_bbox().centroid()[split_axis] < centroid[split_axis];
+  });
+
+  BVHNode *left = construct_bvh(start, partition_point, max_leaf_size);
+  BVHNode *right = construct_bvh(partition_point, end, max_leaf_size);
 
   BVHNode *node = new BVHNode(bbox);
-  node->start = start;
-  node->end = end;
-
+  node->l = left;
+  node->r = right;
   return node;
-
-
 }
 
 bool BVHAccel::has_intersection(const Ray &ray, BVHNode *node) const {
@@ -81,33 +119,75 @@ bool BVHAccel::has_intersection(const Ray &ray, BVHNode *node) const {
   // Take note that this function has a short-circuit that the
   // Intersection version cannot, since it returns as soon as it finds
   // a hit, it doesn't actually have to find the closest hit.
-
-
-
-  for (auto p : primitives) {
-    total_isects++;
-    if (p->has_intersection(ray))
-      return true;
+  
+  if (node == nullptr) {
+    return false;
   }
-  return false;
+  
+  if (!node->bb.intersect(ray, ray.min_t, ray.max_t)) {
+    return false;
+  }
 
-
+  if (node->isLeaf()) {
+    for (auto p : primitives) {
+      total_isects++;
+      if (p->has_intersection(ray))
+        return true;
+    }
+    return false;
+  }
+  return has_intersection(ray, node->l) || has_intersection(ray, node->r);
 }
 
 bool BVHAccel::intersect(const Ray &ray, Intersection *i, BVHNode *node) const {
-  // TODO (Part 2.3):
-  // Fill in the intersect function.
-
-
-
-  bool hit = false;
-  for (auto p : primitives) {
-    total_isects++;
-    hit = p->intersect(ray, i) || hit;
+  if (node == nullptr) {
+    return false; // Base case: if node is null, no intersection.
   }
-  return hit;
+  
+  double t0 = ray.min_t, t1 = ray.max_t;
+  if (!node->bb.intersect(ray, t0, t1)) {
+    return false; // If the ray misses the bounding box, no need to check further.
+  }
 
+  if (node->isLeaf()) {
+    bool hit = false; // Keep track of any hit.
+    for (auto p = node->start; p != node->end; ++p) {
+      total_isects++;
+      Intersection temp_isect;
+      if ((*p)->intersect(ray, &temp_isect)) {
+        hit = true; // Intersection found.
+        // Update the closest hit intersection only if it's closer.
+        if (temp_isect.t < i->t) {
+          *i = temp_isect;
+          ray.max_t = temp_isect.t; // Update the max_t to the closest t found.
+        }
+      }
+    }
+    return hit; // Return whether we hit anything.
+  } else {
+    // Internal node: check both children and return true if either does.
+    Intersection i_left = *i; // Create a copy for the left child intersection.
+    Intersection i_right = *i; // Create a copy for the right child intersection.
 
+    bool hit_left = intersect(ray, &i_left, node->l);
+    bool hit_right = intersect(ray, &i_right, node->r);
+
+    if (hit_left && hit_right) {
+      if (i_left.t < i_right.t) {
+        *i = i_left;
+      } else {
+        *i = i_right;
+      }
+      return true;
+    } else if (hit_left) {
+      *i = i_left;
+      return true;
+    } else if (hit_right) {
+      *i = i_right;
+      return true;
+    }
+    return false; // No hits in either child.
+  }
 }
 
 } // namespace SceneObjects
