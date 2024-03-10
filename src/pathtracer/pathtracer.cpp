@@ -72,7 +72,7 @@ PathTracer::estimate_direct_lighting_hemisphere(const Ray &r,
 
   // TODO (Part 3): Write your sampling loop here
   // TODO BEFORE YOU BEGIN
-  // UPDATE `est_radiance_global_illumination` to return direct lighting instead of normal shading 
+  // UPDATE `est_radiance_global_illumination` to return direct lighting instead of normal shading
 
   return Vector3D(1.0);
 
@@ -106,7 +106,11 @@ Vector3D PathTracer::zero_bounce_radiance(const Ray &r,
                                           const Intersection &isect) {
   // TODO: Part 3, Task 2
   // Returns the light that results from no bounces of light
-  return isect.bsdf->get_emission();
+
+
+  return Vector3D(1.0);
+
+
 }
 
 Vector3D PathTracer::one_bounce_radiance(const Ray &r,
@@ -116,7 +120,7 @@ Vector3D PathTracer::one_bounce_radiance(const Ray &r,
   // depending on `direct_hemisphere_sample`
 
 
-  return estimate_direct_lighting_hemisphere(r, isect);
+  return Vector3D(1.0);
 
 
 }
@@ -154,24 +158,13 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   //
   // REMOVE THIS LINE when you are ready to begin Part 3.
   
-//  if (!bvh->intersect(r, &isect))
-//    return envLight ? envLight->sample_dir(r) : L_out;
-//
-//
-//  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
+  if (!bvh->intersect(r, &isect))
+    return envLight ? envLight->sample_dir(r) : L_out;
+
+
+  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
 
   // TODO (Part 3): Return the direct illumination.
-  if (!bvh->intersect(r, &isect)) {
-    // If the ray didn't hit anything, return the environment light or black if none exists
-    return envLight ? envLight->sample_dir(r) : Vector3D();
-  }
-
-  // Use the zero_bounce_radiance function to get the light emitted by the object
-  // This will be the base case for our global illumination (no bounces)
-  L_out = zero_bounce_radiance(r, isect);
-
-  // In the future implementation, you would add recursive calls here for handling more bounces
-
 
   // TODO (Part 4): Accumulate the "direct" and "indirect"
   // parts of global illumination into L_out rather than just direct
