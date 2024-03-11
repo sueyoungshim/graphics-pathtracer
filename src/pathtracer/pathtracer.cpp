@@ -72,10 +72,25 @@ PathTracer::estimate_direct_lighting_hemisphere(const Ray &r,
 
   // TODO (Part 3): Write your sampling loop here
   // TODO BEFORE YOU BEGIN
-  // UPDATE `est_radiance_global_illumination` to return direct lighting instead of normal shading
+  // UPDATE `est_radiance_global_illumination` to return direct lighting instead of normal shading 
+  for (int i = 0; i < num_samples; i++) {
+    Vector3D wi_local = hemisphereSampler->get_sample();
+    Vector3D wi = o2w * wi_local;
 
-  return Vector3D(1.0);
+    Ray light_ray(hit_p + wi * EPS_F, wi);
+    light_ray.min_t = EPS_F;
 
+    Intersection light_isect;
+    if (bvh->intersect(light_ray, &light_isect)) {
+      Vector3D emission = light_isect.bsdf->get_emission();
+      if (emission == Vector3D(0, 0, 0)) continue;
+      
+      double cos_theta = dot(wi, isect.n);
+      L_out += emission * isect.bsdf->f(w_out, wi_local) * cos_theta;
+    }
+  }
+  L_out /= (num_samples * (1.0 / (2.0 * PI)));
+  return L_out;
 }
 
 Vector3D
@@ -97,8 +112,30 @@ PathTracer::estimate_direct_lighting_importance(const Ray &r,
   const Vector3D w_out = w2o * (-r.d);
   Vector3D L_out;
 
+  for (auto& light : scene->lights) {
+    Vector3D wi; // Direction from hit point to light
+    double distToLight; // Distance from hit point to light
+    double pdf; // Probability density function for the sampled direction
 
-  return Vector3D(1.0);
+    Vector3D radiance = light->sample_L(hit_p, &wi, &distToLight, &pdf);
+
+    if (radiance.norm() > 0) {
+      Vector3D wi_local = w2o * wi;
+
+      Ray shadow_ray(hit_p + wi * EPS_F, wi, distToLight - EPS_F);
+      shadow_ray.min_t = EPS_F;
+      Intersection shadow_isect;
+
+      if (!bvh->intersect(shadow_ray, &shadow_isect)) {
+        double cosTheta = std::max(0.0, dot(isect.n, wi));
+        if (cosTheta > 0.0 && pdf > 0.0) {
+          Vector3D f = isect.bsdf->f(w_out, wi_local);
+          L_out += (f * radiance * cosTheta) / pdf;
+        }
+      }
+    }
+  }
+  return L_out;
 
 }
 
@@ -106,11 +143,7 @@ Vector3D PathTracer::zero_bounce_radiance(const Ray &r,
                                           const Intersection &isect) {
   // TODO: Part 3, Task 2
   // Returns the light that results from no bounces of light
-
-
-  return Vector3D(1.0);
-
-
+  return isect.bsdf->get_emission();
 }
 
 Vector3D PathTracer::one_bounce_radiance(const Ray &r,
@@ -118,11 +151,10 @@ Vector3D PathTracer::one_bounce_radiance(const Ray &r,
   // TODO: Part 3, Task 3
   // Returns either the direct illumination by hemisphere or importance sampling
   // depending on `direct_hemisphere_sample`
-
-
-  return Vector3D(1.0);
-
-
+  if (direct_hemisphere_sample) {
+    return estimate_direct_lighting_hemisphere(r, isect);
+  }
+  return estimate_direct_lighting_importance(r, isect);
 }
 
 Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
@@ -158,13 +190,22 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   //
   // REMOVE THIS LINE when you are ready to begin Part 3.
   
-  if (!bvh->intersect(r, &isect))
-    return envLight ? envLight->sample_dir(r) : L_out;
-
-
-  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
+//  if (!bvh->intersect(r, &isect))
+//    return envLight ? envLight->sample_dir(r) : L_out;
+//
+//
+//  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
 
   // TODO (Part 3): Return the direct illumination.
+  if (!bvh->intersect(r, &isect)) {
+    return envLight ? envLight->sample_dir(r) : Vector3D();
+  }
+  
+  L_out += zero_bounce_radiance(r, isect);
+  L_out += one_bounce_radiance(r, isect);
+
+  // In the future implementation, you would add recursive calls here for handling more bounces
+  
 
   // TODO (Part 4): Accumulate the "direct" and "indirect"
   // parts of global illumination into L_out rather than just direct
