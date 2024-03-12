@@ -56,6 +56,10 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
+            argument = "-t 8 -s 2048 -a 64 0.05 -l 1 -m 5 -r 480 360 -f bunny.png ../dae/sky/CBbunny.dae"
+            isEnabled = "NO">
+         </CommandLineArgument>
+         <CommandLineArgument
             argument = "-t 8 -s 64 -l 64 -s 1 -m 6 -f bunny_64_32.png -r 480 360 ../dae/sky/CBbunny.dae"
             isEnabled = "NO">
          </CommandLineArgument>
@@ -76,7 +80,7 @@
             isEnabled = "NO">
          </CommandLineArgument>
          <CommandLineArgument
-            argument = "-t 8 -s 1024 -l 32 -m 1  -f bunny_64_32.png -r 480 360 ../dae/sky/CBbunny.dae"
+            argument = "-t 8 -s 1024 -l 32 -m 2  -f bunny_64_32.png -r 480 360 ../dae/sky/CBbunny.dae"
             isEnabled = "YES">
          </CommandLineArgument>
          <CommandLineArgument
