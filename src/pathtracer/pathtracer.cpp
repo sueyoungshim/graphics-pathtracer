@@ -116,27 +116,38 @@ PathTracer::estimate_direct_lighting_importance(const Ray &r,
     Vector3D wi; // Direction from hit point to light
     double distToLight; // Distance from hit point to light
     double pdf; // Probability density function for the sampled direction
+    int num_samples = scene->lights.size() * ns_area_light;
 
-    Vector3D radiance = light->sample_L(hit_p, &wi, &distToLight, &pdf);
-
-    if (radiance.norm() > 0) {
+    if (light->is_delta_light()) {
+      Vector3D radiance = light->sample_L(hit_p, &wi, &distToLight, &pdf);
       Vector3D wi_local = w2o * wi;
 
-      Ray shadow_ray(hit_p + wi * EPS_F, wi, distToLight - EPS_F);
-      shadow_ray.min_t = EPS_F;
-      Intersection shadow_isect;
-
-      if (!bvh->intersect(shadow_ray, &shadow_isect)) {
-        double cosTheta = std::max(0.0, dot(isect.n, wi));
-        if (cosTheta > 0.0 && pdf > 0.0) {
-          Vector3D f = isect.bsdf->f(w_out, wi_local);
-          L_out += (f * radiance * cosTheta) / pdf;
+      double cosTheta = dot(isect.n, wi);
+      if (cosTheta > 0.0 && pdf > 0.0) {
+        Vector3D f = isect.bsdf->f(w_out, wi_local);
+        L_out += (f * radiance * cosTheta) / pdf;
+      }
+    } else {
+      for (int i = 0; i < num_samples; i++) {
+        Vector3D radiance = light->sample_L(hit_p, &wi, &distToLight, &pdf);
+        Vector3D wi_local = w2o * wi;
+        
+        Ray shadow_ray(hit_p + wi * EPS_F, wi, distToLight - EPS_F);
+        shadow_ray.min_t = EPS_F;
+        Intersection shadow_isect;
+        
+        if (!bvh->intersect(shadow_ray, &shadow_isect)) {
+          double cosTheta = dot(isect.n, wi);
+          if (cosTheta > 0.0 && pdf > 0.0) {
+            Vector3D f = isect.bsdf->f(w_out, wi_local);
+            L_out += (f * radiance * cosTheta) / pdf;
+          }
         }
       }
+      L_out /= num_samples;
     }
   }
   return L_out;
-
 }
 
 Vector3D PathTracer::zero_bounce_radiance(const Ray &r,
@@ -171,7 +182,40 @@ Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
   // TODO: Part 4, Task 2
   // Returns the one bounce radiance + radiance from extra bounces at this point.
   // Should be called recursively to simulate extra bounces.
+  
+  if (r.depth == 0) {
+    return L_out;
+  }
+  
+  if (!isAccumBounces && r.depth == 1) {
+    return one_bounce_radiance(r, isect);
+  }
 
+  if (isAccumBounces) {
+    L_out += one_bounce_radiance(r, isect);
+  }
+
+  Vector3D w_in_local;
+  double pdf;
+  Vector3D f = isect.bsdf->sample_f(w_out, &w_in_local, &pdf);
+
+  if (pdf > 0) {
+    Vector3D w_in_world = o2w * w_in_local;
+
+    Ray new_ray(hit_p + w_in_world * EPS_F, w_in_world, INFINITY);
+    new_ray.depth = r.depth - 1;
+
+    Intersection new_isect;
+    if (bvh->intersect(new_ray, &new_isect)) {
+      Vector3D L_indirect = at_least_one_bounce_radiance(new_ray, new_isect);
+      
+      if (!isAccumBounces && new_ray.depth == 0) {
+        L_out = L_indirect;
+      } else {
+        L_out += f * L_indirect * w_in_local.z / pdf;
+      }
+    }
+  }
 
   return L_out;
 }
@@ -201,14 +245,17 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
     return envLight ? envLight->sample_dir(r) : Vector3D();
   }
   
-  L_out += zero_bounce_radiance(r, isect);
-  L_out += one_bounce_radiance(r, isect);
+  if (isAccumBounces || max_ray_depth == 0) {
+    L_out += zero_bounce_radiance(r, isect);
+  }
+//  L_out += one_bounce_radiance(r, isect);
 
   // In the future implementation, you would add recursive calls here for handling more bounces
   
 
   // TODO (Part 4): Accumulate the "direct" and "indirect"
   // parts of global illumination into L_out rather than just direct
+  L_out += at_least_one_bounce_radiance(r, isect);
 
   return L_out;
 }
@@ -228,6 +275,7 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
     double sample_y = (y + sample.y) / sampleBuffer.h;
     
     Ray ray = camera->generate_ray(sample_x, sample_y);
+    ray.depth = max_ray_depth;
     Vector3D radiance = est_radiance_global_illumination(ray);
     radiance_sum += radiance;
   }
