@@ -161,56 +161,42 @@ Vector3D PathTracer::one_bounce_radiance(const Ray &r,
   return estimate_direct_lighting_importance(r, isect);
 }
 
-Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
-                                                  const Intersection &isect) {
-  Matrix3x3 o2w;
-  make_coord_space(o2w, isect.n);
-  Matrix3x3 w2o = o2w.T();
 
-  Vector3D hit_p = r.o + r.d * isect.t;
-  Vector3D w_out = w2o * (-r.d);
+Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r, const Intersection &isect) {
+    Matrix3x3 o2w;
+    make_coord_space(o2w, isect.n);
+    Matrix3x3 w2o = o2w.T();
 
-  Vector3D L_out(0, 0, 0);
+    Vector3D hit_p = r.o + r.d * isect.t;
+    Vector3D w_out = w2o * (-r.d);
 
-  // TODO: Part 4, Task 2
-  // Returns the one bounce radiance + radiance from extra bounces at this point.
-  // Should be called recursively to simulate extra bounces.
-  
-  if (r.depth == 0) {
-    return L_out;
-  }
-  
-  if (!isAccumBounces && r.depth == 1) {
-    return one_bounce_radiance(r, isect);
-  }
+    Vector3D L_out(0, 0, 0);
 
-  if (isAccumBounces) {
-    L_out += one_bounce_radiance(r, isect);
-  }
-
-  Vector3D w_in_local;
-  double pdf;
-  Vector3D f = isect.bsdf->sample_f(w_out, &w_in_local, &pdf);
-
-  if (pdf > 0) {
-    Vector3D w_in_world = o2w * w_in_local;
-
-    Ray new_ray(hit_p + w_in_world * EPS_F, w_in_world, INFINITY);
-    new_ray.depth = r.depth - 1;
-
-    Intersection new_isect;
-    if (bvh->intersect(new_ray, &new_isect)) {
-      Vector3D L_indirect = at_least_one_bounce_radiance(new_ray, new_isect);
-      
-      if (!isAccumBounces && new_ray.depth == 0) {
-        L_out = L_indirect;
-      } else {
-        L_out += f * L_indirect * w_in_local.z / pdf;
-      }
+    if (isAccumBounces || max_ray_depth == 0) {
+        L_out += one_bounce_radiance(r, isect);
     }
-  }
-  return L_out;
+
+//    if (coin_flip(0.3)) {
+        Vector3D w_in_local;
+        double pdf;
+        Vector3D f = isect.bsdf->sample_f(w_out, &w_in_local, &pdf);
+
+        if (pdf > 0) {
+            Vector3D w_in_world = o2w * w_in_local;
+            Ray new_ray(hit_p + w_in_world * EPS_F, w_in_world, INFINITY);
+            new_ray.depth = r.depth - 1;
+
+            Intersection new_isect;
+            if (bvh->intersect(new_ray, &new_isect)) {
+                Vector3D L_indirect = at_least_one_bounce_radiance(new_ray, new_isect);
+//                L_out += (f * L_indirect * std::abs(w_in_local.z) / (pdf * 0.7));
+                L_out += (f * L_indirect * std::abs(w_in_local.z) / (pdf * 0.7));
+            }
+        }
+//    }
+    return L_out;
 }
+
 
 //Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
 //                                                  const Intersection &isect) {
@@ -227,41 +213,45 @@ Vector3D PathTracer::at_least_one_bounce_radiance(const Ray &r,
 //  // Returns the one bounce radiance + radiance from extra bounces at this point.
 //  // Should be called recursively to simulate extra bounces.
 //  
-//  if (coin_flip(0.4)) {
-//    return L_out;
-//  }
-//  
-//  if (!isAccumBounces && r.depth == 1) {
-//    return one_bounce_radiance(r, isect);
-//  }
+//  if (coin_flip(0.3)) {
+//    if (r.depth == 0) {
+//      return L_out;
+//    }
+//    
+//    if (!isAccumBounces && r.depth == 1) {
+//      return one_bounce_radiance(r, isect);
+//    }
 //
-//  if (isAccumBounces) {
-//    L_out += one_bounce_radiance(r, isect);
-//  }
+//    if (isAccumBounces) {
+//      L_out += one_bounce_radiance(r, isect);
+//    }
 //
-//  Vector3D w_in_local;
-//  double pdf;
-//  Vector3D f = isect.bsdf->sample_f(w_out, &w_in_local, &pdf);
+//    Vector3D w_in_local;
+//    double pdf;
+//    Vector3D f = isect.bsdf->sample_f(w_out, &w_in_local, &pdf);
 //
-//  if (pdf > 0) {
-//    Vector3D w_in_world = o2w * w_in_local;
+//    if (pdf > 0) {
+//      Vector3D w_in_world = o2w * w_in_local;
 //
-//    Ray new_ray(hit_p + w_in_world * EPS_F, w_in_world, INFINITY);
-//    new_ray.depth = r.depth - 1;
+//      Ray new_ray(hit_p + w_in_world * EPS_F, w_in_world, INFINITY);
+//      new_ray.depth = r.depth - 1;
 //
-//    Intersection new_isect;
-//    if (bvh->intersect(new_ray, &new_isect)) {
-//      Vector3D L_indirect = at_least_one_bounce_radiance(new_ray, new_isect);
-//      
-//      if (!isAccumBounces && new_ray.depth == 0) {
-//        L_out = L_indirect;
-//      } else {
-//        L_out += f * L_indirect * w_in_local.z / pdf;
+//      Intersection new_isect;
+//      if (bvh->intersect(new_ray, &new_isect)) {
+//        Vector3D L_indirect = at_least_one_bounce_radiance(new_ray, new_isect);
+//        
+//        if (!isAccumBounces && new_ray.depth == 0) {
+//          L_out = L_indirect;
+//        } else {
+//          L_out += f * L_indirect * w_in_local.z / pdf;
+//          L_out += f * L_indirect * w_in_local.z / (pdf * 0.7);
+//        }
 //      }
 //    }
 //  }
 //  return L_out;
 //}
+
 
 Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   Intersection isect;
@@ -274,14 +264,6 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
   // The following line of code returns a debug color depending
   // on whether ray intersection with triangles or spheres has
   // been implemented.
-  //
-  // REMOVE THIS LINE when you are ready to begin Part 3.
-  
-//  if (!bvh->intersect(r, &isect))
-//    return envLight ? envLight->sample_dir(r) : L_out;
-//
-//
-//  L_out = (isect.t == INF_D) ? debug_shading(r.d) : normal_shading(isect.n);
 
   // TODO (Part 3): Return the direct illumination.
   if (!bvh->intersect(r, &isect)) {
@@ -292,14 +274,7 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
     L_out += zero_bounce_radiance(r, isect);
   }
 //  L_out += one_bounce_radiance(r, isect);
-
-  // In the future implementation, you would add recursive calls here for handling more bounces
-  
-
-  // TODO (Part 4): Accumulate the "direct" and "indirect"
-  // parts of global illumination into L_out rather than just direct
   L_out += at_least_one_bounce_radiance(r, isect);
-
   return L_out;
 }
 
@@ -340,6 +315,52 @@ Vector3D PathTracer::est_radiance_global_illumination(const Ray &r) {
 //  sampleCountBuffer[x + y * sampleBuffer.w] = num_samples;
 //}
 
+float illum_f(Vector3D v) {
+    return 0.2126f * v.r + 0.7152f * v.g + 0.0722f * v.b;
+}
+
+//
+//
+//void PathTracer::raytrace_pixel(size_t x, size_t y) {
+//  Vector2D origin = Vector2D(x, y);
+//  float illum_sum;
+//  float illum_sq_sum;
+//  int sample_count = 0;
+//
+//  while (sample_count < ns_aa) {
+//    int batch_samples = std::min(samplesPerBatch, ns_aa - sample_count);
+//    for (int i = 0; i < batch_samples; ++i) {
+//      Vector2D sample = gridSampler->get_sample();
+//      double sample_x = (x + sample.x) / double(sampleBuffer.w); // Ensure floating-point division
+//      double sample_y = (y + sample.y) / double(sampleBuffer.h); // Ensure floating-point division
+//      
+//      Ray ray = camera->generate_ray(sample_x, sample_y);
+//      ray.depth = max_ray_depth;
+//      Vector3D radiance = est_radiance_global_illumination(ray);
+//      float illum = illum_f(radiance);
+//      
+//      illum_sum += illum;
+//      illum_sq_sum += illum * illum;
+//    }
+//    sample_count += batch_samples;
+//
+//    if (sample_count > 1) {
+//      float mean = illum_sum / sample_count;
+//      float variance = (illum_sq_sum - (illum_sum * illum_sum) / sample_count) / (sample_count - 1);
+//      
+//      float I = 1.96 * sqrt(variance / sample_count);
+//      
+//      if (I <= maxTolerance * mean) {
+//        break;
+//      }
+//    }
+//  }
+//
+//  Vector3D illum_avg = illum_sum / sample_count;
+//  sampleBuffer.update_pixel(illum_avg, x, y);
+//  sampleCountBuffer[x + y * sampleBuffer.w] = sample_count;
+//}
+
 
 void PathTracer::raytrace_pixel(size_t x, size_t y) {
   Vector2D origin = Vector2D(x, y);
@@ -351,8 +372,8 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
     int batch_samples = std::min(samplesPerBatch, ns_aa - sample_count);
     for (int i = 0; i < batch_samples; ++i) {
       Vector2D sample = gridSampler->get_sample();
-      double sample_x = (x + sample.x) / double(sampleBuffer.w); // Ensure floating-point division
-      double sample_y = (y + sample.y) / double(sampleBuffer.h); // Ensure floating-point division
+      double sample_x = (x + sample.x) / double(sampleBuffer.w);
+      double sample_y = (y + sample.y) / double(sampleBuffer.h);
       
       Ray ray = camera->generate_ray(sample_x, sample_y);
       ray.depth = max_ray_depth;
@@ -374,7 +395,6 @@ void PathTracer::raytrace_pixel(size_t x, size_t y) {
       }
     }
   }
-
   Vector3D illum_avg = illum_sum / sample_count;
   sampleBuffer.update_pixel(illum_avg, x, y);
   sampleCountBuffer[x + y * sampleBuffer.w] = sample_count;

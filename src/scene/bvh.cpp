@@ -77,6 +77,10 @@ BVHNode *BVHAccel::construct_bvh(std::vector<Primitive *>::iterator start,
   BBox bbox;
   Vector3D centroid_sum;
   for (auto p = start; p != end; p++) {
+    if (*p == nullptr) {
+        // Handle null pointer (skip or error log)
+        continue;
+      }
     BBox bb = (*p)->get_bbox();
     centroid_sum += bb.centroid();
     bbox.expand(bb);
